@@ -26,7 +26,7 @@ Title, brief, category tag, creator name, date posted, random background color.
 | Page | Who Sees It | What It Does |
 |------|-------------|--------------|
 | `/` (Home) | Everyone | Infinite scroll feed of all idea cards |
-| `/dashboard` | Logged-in generators | See/manage own posted ideas |
+| `/your-ideas` | Logged-in generators | See/manage own posted ideas |
 | `/profile/:uid` | Everyone | Public profile — ideas + email contact |
 | `/settings` | Logged-in generators | Edit display name & bio |
 
@@ -95,6 +95,64 @@ This section is updated each session so the next picks up seamlessly.
 - Gradient separator lines (`h-px via-indigo-500/20`) removed — glow overflow handles transitions
 - All pages (Home, Dashboard, Settings, Profile) use the same hero pattern with theme overlay + 3 glow blobs
 
+## Masonry Tile Layout
+
+- IdeaFeed uses CSS columns (`columns-1 sm:columns-2 lg:columns-3 gap-5`) instead of grid for a Pinterest-style masonry layout
+- IdeaCard gets a `cardSize` prop — strictly based on description length (no index-based overrides):
+  - `xs`: < 40 chars, `line-clamp-1`, small text
+  - `compact`: 40–80, `line-clamp-2`
+  - `default`: 80–160, `line-clamp-3`
+  - `expanded`: 160–250, `max-h-28 overflow-y-auto`
+  - `xl`: > 250, `max-h-32 overflow-y-auto`, larger text
+- Each tile wrapped in `break-inside-avoid-column` to prevent column splitting
+- Skeleton loading also has varied heights matching tile layout
+
+## Routes
+
+| Page | File | Route |
+|------|------|-------|
+| Home | `src/pages/Home.jsx` | `/` |
+| Your Ideas | `src/pages/YourIdeas.jsx` | `/your-ideas` |
+| Profile | `src/pages/Profile.jsx` | `/profile/:uid` |
+| Settings | `src/pages/Settings.jsx` | `/settings` |
+| Catch-all | — | `path="*"` → `Navigate to="/"` |
+
+- Sign Out in Navbar calls `await logOut()` then `navigate("/")`
+
+## Shadcn Components Used
+
+| Manual Component | Replaced With | File |
+|---|---|---|
+| ThemeDrawer (slide-out) | `<Sheet>` `SheetContent` | `src/components/ThemeDrawer.jsx` |
+| IdeaCard (div layout) | `<Card>` `CardHeader` `CardContent` `CardFooter` `CardTitle` | `src/components/IdeaCard.jsx` |
+| IdeaForm raw inputs | `<Input>` `<Textarea>` `<NativeSelect>` `<Label>` | `src/components/IdeaForm.jsx` |
+| Feed loading shimmer | `<Skeleton>` | `src/components/IdeaFeed.jsx` |
+| Feed spinner | `<Spinner>` | `src/components/IdeaFeed.jsx` |
+| Feed empty state | `<Empty>` `EmptyHeader` `EmptyTitle` `EmptyDescription` | `src/components/IdeaFeed.jsx` |
+
+Installed via `npx shadcn add` — all in `src/components/ui/`. Uses shadcn v4 + radix-ui primitives. Navbar passes `onClose={}` to ThemeDrawer which maps to Sheet's `onOpenChange`.
+
+## Home Page Features
+
+- **Tagline shuffle** — 5 taglines rotate every 4s with fade animation
+- **Live counter** — shows `{n} ideas` (or `{n} ideas in {category}`) above the feed
+- **Search bar** — client-side search on title + brief, shows `(filtered)` count
+- **Category filter** — pill-shaped buttons, client-side filter, resets infinite scroll
+- **"Surprise Me" button** — fixed bottom-right, scrolls to a random card using `data-card-index` attributes
+- Search + category combine: category is filtered, search is client-filtered on results
+
+## Surprise Me Button
+
+- Lives in `src/App.jsx` as a direct child of `<BrowserRouter>` (sibling to Routes/Navbar) to avoid any `overflow`/`transform`/`filter` ancestors interfering with `position: fixed`
+- `surpriseTrigger` state in App, passed to Home → IdeaFeed
+- On mobile, the button still causes horizontal scroll issue (UNRESOLVED). Possible causes:
+  - Navbar's `backdrop-blur-md` (backdrop-filter) on Safari/iOS can break `position: fixed` in some WebKit versions
+  - Glow blob `size-[40rem]` overflow may interact with scroll container on narrow viewports
+  - `overflow-x-auto` on category pills container may interact with page-level overflow
+- Tried `overflow-x-hidden` on page container but it clips the intentional glow blob bleed-through
+- Tried moving button outside page container to Fragment root — didn't resolve
+- Current: button at App level, glow blobs unclipped, issue persists
+
 ## Build & Verify
 
 ```powershell
@@ -102,4 +160,5 @@ cmd /c "npm run build"
 ```
 
 ## Next Steps
-1. Push to GitHub → Deploy to Vercel
+1. Fix Surprise Me button mobile horizontal scroll (possibly Safari `backdrop-filter` + `position: fixed` bug)
+2. Push to GitHub → Deploy to Vercel

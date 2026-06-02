@@ -44,7 +44,7 @@ export async function addIdea({ title, brief, category, creatorId, creatorName }
 
 export async function fetchIdeas({ pageSize = 6, cursor } = {}) {
   const constraints = [orderBy("createdAt", "desc"), limit(pageSize)];
-  if (cursor) constraints.splice(0, 0, startAfter(cursor));
+  if (cursor) constraints.splice(1, 0, startAfter(cursor));
   const q = query(collection(db, IDEAS), ...constraints);
   const snapshot = await getDocs(q);
   return {

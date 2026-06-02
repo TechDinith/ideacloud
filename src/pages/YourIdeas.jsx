@@ -50,7 +50,7 @@ export default function Dashboard({ user }) {
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-xl h-44 bg-gray-900 animate-shimmer" />
+                <div key={i} className={`rounded-xl bg-gray-900 ${i === 0 ? "h-52" : "h-40"}`} />
               ))}
             </div>
           ) : ideas.length === 0 ? (
@@ -66,16 +66,20 @@ export default function Dashboard({ user }) {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {ideas.map((idea, i) => (
-                <div key={idea.id} className="relative group animate-fade-in-up" style={{ animationDelay: `${i * 80}ms` }}>
-                  <IdeaCard idea={idea} />
-                  <button
-                    onClick={() => handleDelete(idea.id)}
-                    className="absolute bottom-2 right-2 size-7 rounded-full bg-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500/30 transition-all cursor-pointer"
-                  >
-                    <svg className="size-3.5 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                    </svg>
-                  </button>
+                <div key={idea.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 80}ms` }}>
+                  <IdeaCard
+                    idea={idea}
+                    action={
+                      <button
+                        onClick={() => handleDelete(idea.id)}
+                        className="size-7 rounded-full bg-white/10 flex items-center justify-center opacity-0 group-hover/card:opacity-100 hover:bg-red-500/30 transition-all cursor-pointer"
+                      >
+                        <svg className="size-3.5 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                        </svg>
+                      </button>
+                    }
+                  />
                 </div>
               ))}
             </div>

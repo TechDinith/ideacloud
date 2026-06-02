@@ -41,7 +41,7 @@ export default function Settings({ user }) {
         <div className="absolute -bottom-32 right-1/4 size-64 rounded-full blur-3xl pointer-events-none" style={{ background: "var(--theme-glow-2)" }} />
         <div className="max-w-2xl mx-auto px-5 sm:px-6 py-16 relative">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-[var(--theme-from)] via-[var(--theme-via)] to-[var(--theme-to)] bg-clip-text text-transparent">
-            Profile
+            Settings
           </h1>
           <p className="text-gray-400 mt-1">Edit your public profile.</p>
         </div>

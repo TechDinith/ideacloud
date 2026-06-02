@@ -17,7 +17,7 @@ export default function Navbar({ user }) {
       <div className="flex items-center gap-3">
         {user ? (
           <>
-            <Link to="/dashboard">
+            <Link to="/your-ideas">
               <Button variant="ghost" size="sm" className="text-gray-300">
                 Your Ideas
               </Button>
@@ -28,7 +28,7 @@ export default function Navbar({ user }) {
             >
               {user.displayName || user.email}
             </button>
-            <Button variant="outline" size="sm" onClick={logOut}>
+            <Button variant="outline" size="sm" onClick={async () => { await logOut(); navigate("/"); }}>
               Sign Out
             </Button>
           </>
