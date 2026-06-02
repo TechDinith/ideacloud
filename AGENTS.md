@@ -162,3 +162,6 @@ cmd /c "npm run build"
 ## Next Steps
 1. Fix Surprise Me button mobile horizontal scroll (possibly Safari `backdrop-filter` + `position: fixed` bug)
 2. Push to GitHub → Deploy to Vercel
+3. **SEO** — Add `react-helmet-async` for per-page meta tags (title/description)
+4. **SEO** — Add `robots.txt` + `sitemap.xml` so crawlers discover all routes
+5. **SEO** — Consider pre-rendering (`@vercel/speed-insights` or prerender service) so Google indexes actual content
