@@ -31,42 +31,58 @@ const IdeaFeed = forwardRef(function IdeaFeed({ user, search, category, surprise
   const cursorRef = useRef(null);
   const sentinelRef = useRef(null);
   const feedElRef = useRef(null);
+  const cancelledRef = useRef(false);
+  const loadingMoreRef = useRef(false);
+  const hasMoreRef = useRef(true);
 
   useImperativeHandle(ref, () => feedElRef.current);
 
   useEffect(() => {
+    cancelledRef.current = false;
     setLoading(true);
     setError(null);
     cursorRef.current = null;
-    fetchIdeas({ pageSize: 6 }).then((res) => {
+    fetchIdeas({ pageSize: 12 }).then((res) => {
+      if (cancelledRef.current) return;
       setIdeas(res.ideas);
       cursorRef.current = res.lastDoc;
       setHasMore(res.hasMore);
+      hasMoreRef.current = res.hasMore;
       setLoading(false);
     }).catch((err) => {
+      if (cancelledRef.current) return;
       setError(err.message);
       setLoading(false);
     });
+    return () => { cancelledRef.current = true; };
   }, [category]);
 
   const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
+    if (loadingMoreRef.current || !hasMoreRef.current) return;
+    loadingMoreRef.current = true;
     setLoadingMore(true);
     try {
-      const res = await fetchIdeas({ pageSize: 6, cursor: cursorRef.current });
+      const res = await fetchIdeas({ pageSize: 12, cursor: cursorRef.current });
       setIdeas((prev) => [...prev, ...res.ideas]);
       cursorRef.current = res.lastDoc;
       setHasMore(res.hasMore);
+      hasMoreRef.current = res.hasMore;
     } catch (err) {
       setError(err.message);
     } finally {
+      loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMore, category]);
+  }, [category]);
 
   useEffect(() => {
+    if (loading) return;
     const el = sentinelRef.current;
     if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      loadMore();
+      return;
+    }
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) loadMore();
@@ -75,14 +91,18 @@ const IdeaFeed = forwardRef(function IdeaFeed({ user, search, category, surprise
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [loadMore]);
+  }, [loadMore, loading]);
 
   useEffect(() => {
     if (!surpriseTrigger) return;
     const cards = feedElRef.current?.querySelectorAll("[data-card-index]");
     if (!cards?.length) return;
     const idx = Math.floor(Math.random() * cards.length);
-    cards[idx].scrollIntoView({ behavior: "smooth", block: "center" });
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    cards[idx].scrollIntoView({
+      behavior: prefersReduced ? "auto" : "smooth",
+      block: "center",
+    });
   }, [surpriseTrigger]);
 
   const displayed = filterIdeas(ideas, search, category);
@@ -132,13 +152,11 @@ const IdeaFeed = forwardRef(function IdeaFeed({ user, search, category, surprise
         <Empty>
           <EmptyHeader>
             <button
+              type="button"
               onClick={handleAdd}
-              className="size-16 rounded-full flex items-center justify-center transition-all cursor-pointer"
-              style={{ background: "linear-gradient(to bottom right, var(--theme-accent-from), var(--theme-accent-to))" }}
-              onMouseEnter={(e) => e.currentTarget.style.background = "linear-gradient(to bottom right, var(--theme-accent-from-hover), var(--theme-accent-to-hover))"}
-              onMouseLeave={(e) => e.currentTarget.style.background = "linear-gradient(to bottom right, var(--theme-accent-from), var(--theme-accent-to))"}
+              className="add-idea-btn size-16 rounded-full flex items-center justify-center transition-all cursor-pointer"
             >
-              <svg className="size-8" style={{ color: "var(--theme-text)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <svg className="size-8" style={{ color: "var(--theme-text)" }} aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
               </svg>
             </button>
@@ -176,14 +194,16 @@ const IdeaFeed = forwardRef(function IdeaFeed({ user, search, category, surprise
         )}
       </div>
 
-      <div ref={sentinelRef} className="flex justify-center py-10">
-        {loadingMore && (
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Spinner className="text-[var(--theme-spinner)]" />
-            Loading more ideas...
-          </div>
-        )}
-      </div>
+      {hasMore && (
+        <div ref={sentinelRef} className="flex justify-center py-10">
+          {loadingMore && (
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Spinner className="text-[var(--theme-spinner)]" />
+              Loading more ideas...
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 });

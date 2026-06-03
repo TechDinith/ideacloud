@@ -3,7 +3,13 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
-import { NativeSelect, NativeSelectOption } from "./ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import { addIdea } from "../firebase/ideas";
 
 const categories = ["Technology", "Education", "Health", "Finance", "Design", "Music", "Art", "Food", "Travel", "Other"];
@@ -67,17 +73,17 @@ export default function IdeaForm({ user, onIdeaAdded }) {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="category" className="text-gray-400">Category</Label>
-        <NativeSelect
-          id="category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="bg-gray-800 border-gray-700 text-white focus-visible:border-[var(--theme-ring)] focus-visible:ring-[var(--theme-ring)]"
-        >
-          {categories.map((c) => (
-            <NativeSelectOption key={c} value={c}>{c}</NativeSelectOption>
-          ))}
-        </NativeSelect>
+        <Label className="text-gray-400">Category</Label>
+        <Select value={category} onValueChange={setCategory}>
+          <SelectTrigger className="bg-gray-800 border-gray-700 text-white focus-visible:border-[var(--theme-ring)] focus-visible:ring-[var(--theme-ring)]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-gray-900 border-gray-700 text-white">
+            {categories.map((c) => (
+              <SelectItem key={c} value={c} className="focus:bg-gray-800 focus:text-white">{c}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Button type="submit" disabled={submitting} className="w-full">

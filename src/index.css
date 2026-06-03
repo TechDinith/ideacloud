@@ -85,6 +85,7 @@
   }
   html {
     font-family: var(--font-sans);
+    overflow-x: clip;
   }
 }
 
@@ -117,6 +118,38 @@
 @keyframes pulse-logo {
   0%, 100% { opacity: 0.6; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.05); }
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+html body[data-scroll-locked] {
+  overflow: visible !important;
+  margin-right: 0 !important;
+  --removed-body-scroll-bar-size: 0 !important;
+}
+
+button, a, input, select, textarea, [role="button"] {
+  touch-action: manipulation;
+}
+
+.surprise-btn {
+  background: linear-gradient(to bottom right, var(--theme-accent-from), var(--theme-accent-to));
+}
+.surprise-btn:hover {
+  background: linear-gradient(to bottom right, var(--theme-accent-from-hover), var(--theme-accent-to-hover));
+}
+
+.add-idea-btn {
+  background: linear-gradient(to bottom right, var(--theme-accent-from), var(--theme-accent-to));
+}
+.add-idea-btn:hover {
+  background: linear-gradient(to bottom right, var(--theme-accent-from-hover), var(--theme-accent-to-hover));
 }
 
 :root, [data-theme="indigo"] {

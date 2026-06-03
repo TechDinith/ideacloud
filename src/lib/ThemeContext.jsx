@@ -2,14 +2,17 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 const ThemeContext = createContext();
 
+function getInitialTheme() {
+  try { return localStorage.getItem("ideacloud-theme") || "indigo"; }
+  catch { return "indigo"; }
+}
+
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("ideacloud-theme") || "indigo";
-  });
+  const [theme, setTheme] = useState(getInitialTheme);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("ideacloud-theme", theme);
+    try { localStorage.setItem("ideacloud-theme", theme); } catch {}
   }, [theme]);
 
   return (

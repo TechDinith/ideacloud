@@ -69,8 +69,8 @@ export async function fetchUserIdeas(uid) {
   const snapshot = await getDocs(q);
   const ideas = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
   ideas.sort((a, b) => {
-    const ta = a.createdAt?.toMillis?.() || 0;
-    const tb = b.createdAt?.toMillis?.() || 0;
+    const ta = a.createdAt?.toMillis?.() ?? 0;
+    const tb = b.createdAt?.toMillis?.() ?? 0;
     return tb - ta;
   });
   return ideas;

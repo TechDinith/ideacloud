@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { fetchUserIdeas } from "../firebase/ideas";
+import SEO from "../components/SEO";
 import IdeaCard from "../components/IdeaCard";
 import { Button } from "../components/ui/button";
 
@@ -11,18 +12,26 @@ export default function Profile() {
   const [profile, setProfile] = useState(null);
   const [ideas, setIdeas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const cancelledRef = useRef(false);
 
   useEffect(() => {
+    cancelledRef.current = false;
     async function load() {
-      const [userSnap, userIdeas] = await Promise.all([
-        getDoc(doc(db, "users", uid)),
-        fetchUserIdeas(uid),
-      ]);
-      if (userSnap.exists()) setProfile(userSnap.data());
-      setIdeas(userIdeas);
+      try {
+        const [userSnap, userIdeas] = await Promise.all([
+          getDoc(doc(db, "users", uid)),
+          fetchUserIdeas(uid),
+        ]);
+        if (cancelledRef.current) return;
+        if (userSnap.exists()) setProfile(userSnap.data());
+        setIdeas(userIdeas);
+      } catch {
+        if (cancelledRef.current) return;
+      }
       setLoading(false);
     }
     load();
+    return () => { cancelledRef.current = true; };
   }, [uid]);
 
   if (loading) {
@@ -42,11 +51,12 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <main className="min-h-screen bg-gray-950">
+      <SEO title={profile.name} description={profile.bio || `${profile.name}'s ideas on IdeaCloud.`} path={`/profile/${uid}`} />
       <div className="relative">
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "var(--theme-overlay)" }} />
-        <div className="absolute top-0 left-1/3 size-72 rounded-full blur-3xl pointer-events-none" style={{ background: "var(--theme-glow-1)" }} />
-        <div className="absolute -bottom-32 right-1/4 size-64 rounded-full blur-3xl pointer-events-none" style={{ background: "var(--theme-glow-2)" }} />
+        <div className="absolute top-0 left-1/3 size-72 max-w-[100vw] rounded-full blur-3xl pointer-events-none" style={{ background: "var(--theme-glow-1)" }} />
+        <div className="absolute -bottom-32 right-1/4 size-64 max-w-[100vw] rounded-full blur-3xl pointer-events-none" style={{ background: "var(--theme-glow-2)" }} />
         <div className="max-w-4xl mx-auto px-5 sm:px-6 py-16 relative">
           <div className="bg-gray-900/60 backdrop-blur-sm border border-gray-800 rounded-xl p-6 flex flex-col sm:flex-row items-start justify-between gap-4 animate-fade-in-up">
             <div className="text-left">
@@ -80,6 +90,6 @@ export default function Profile() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }

@@ -159,9 +159,72 @@ Installed via `npx shadcn add` — all in `src/components/ui/`. Uses shadcn v4 +
 cmd /c "npm run build"
 ```
 
+## Completed — Cross-Platform Compatibility Fixes (Jun 3)
+
+### Horizontal Scroll Bug
+- Added `overflow-x: clip` to `<html>` in `index.css` — prevents horizontal scroll without breaking `position: fixed`
+- Added `max-w-[100vw]` to all glow blobs across Home, YourIdeas, Profile, Settings — caps blob width at viewport
+
+### Hooks Violations (Critical)
+- **YourIdeas.jsx**, **Settings.jsx**: Replaced early return `if (!user) return <Navigate>` pattern with `useEffect` navigation. All hooks now run consistently on every render, eliminating React rules-of-hooks violations.
+
+### State Updates After Unmount
+- Added `cancelledRef` pattern to **IdeaFeed.jsx**, **YourIdeas.jsx**, **Profile.jsx**, **Settings.jsx** — all async `.then()` callbacks check `cancelledRef.current` before calling setState.
+- `useEffect` cleanup sets `cancelledRef.current = true`.
+
+### Touch/Mobile Fixes
+- **YourIdeas.jsx**: Delete button now visible on touch via `group-focus-within/card:opacity-100`
+- **App.jsx, IdeaFeed.jsx**: Replaced `onMouseEnter`/`onMouseLeave` inline handlers with CSS `.surprise-btn:hover` and `.add-idea-btn:hover` classes
+- **index.css**: Added `touch-action: manipulation` on all interactive elements to eliminate 300ms tap delay
+
+### Accessibility
+- **Home.jsx**: Search input now has `aria-label="Search ideas"`; category filter buttons have `aria-pressed`
+- **Settings.jsx**: Added `htmlFor`/`id` pairs linking labels to inputs; added loading spinner while profile data loads
+- **All pages**: Replaced root `<div>` with `<main>` landmark
+- **All SVGs**: Added `aria-hidden="true"` to decorative icons
+- **Buttons**: Added `type="button"` where missing; added `aria-label` to Surprise Me, delete, and theme toggle buttons
+
+### Stale Closures
+- **IdeaFeed.jsx**: `loadMore` now uses `loadingMoreRef` and `hasMoreRef` instead of closure-captured state for guard flags
+
+### Browser Compatibility
+- **index.css**: `scrollbar-none` now also targets Firefox (`scrollbar-width: none`) and IE (`-ms-overflow-style: none`)
+- **ThemeContext.jsx**: `localStorage` wrapped in try/catch (Safari private mode)
+- **firebase/auth.js**: `signInWithPopup` falls back to `signInWithRedirect` on mobile; added `getRedirectResult` handler at module scope
+- **IdeaFeed.jsx**: Added `IntersectionObserver` support check with fallback
+
+### Infinite Scroll
+- Sentinel `<div>` now only renders when `hasMore` is true
+
+## Completed — SEO & Polish (Jun 3)
+
+### Select Dropdown
+- Replaced NativeSelect with Radix UI Select (shadcn v4) — `src/components/ui/select.jsx`
+- Radix Select causes layout shift (`react-remove-scroll` lock) → fixed with CSS override in `index.css`:
+  ```css
+  html body[data-scroll-locked] {
+    overflow: visible !important;
+    margin-right: 0 !important;
+    --removed-body-scroll-bar-size: 0 !important;
+  }
+  ```
+- `--radix-select-trigger-width` CSS variable NOT set by radix-ui v1.4.3 (meta-package) → removed all CSS variable references from Select component
+- Dropdown uses Portal + popper positioning
+
+### Idea Cards Not Loading (YourIdeas / Profile)
+- `fetchUserIdeas` used `where("creatorId")` + `orderBy("createdAt")` → requires composite Firestore index (missing)
+- Fix: removed `orderBy` from query, sort client-side in `src/firebase/ideas.js`
+- Added try/catch to `YourIdeas.jsx` and `Profile.jsx` so errors don't hang loading spinner
+
+### SEO
+- Installed `react-helmet-async` — wrapped app in `<HelmetProvider>` in `App.jsx`
+- Created `src/components/SEO.jsx` — reusable component with title, description, OG tags, canonical URL
+- Added SEO to all pages: Home, Your Ideas, Settings, Profile (dynamic name/bio)
+- Created `public/robots.txt` — allows all crawlers, references sitemap
+- Created `public/sitemap.xml` — lists home page URL
+
 ## Next Steps
-1. Fix Surprise Me button mobile horizontal scroll (possibly Safari `backdrop-filter` + `position: fixed` bug)
-2. Push to GitHub → Deploy to Vercel
-3. **SEO** — Add `react-helmet-async` for per-page meta tags (title/description)
-4. **SEO** — Add `robots.txt` + `sitemap.xml` so crawlers discover all routes
-5. **SEO** — Consider pre-rendering (`@vercel/speed-insights` or prerender service) so Google indexes actual content
+1. **Pre-rendering** — Deploy to Vercel, check Google indexing. If content not indexed, add `@prerender/prerender` middleware via `vercel.json` so Googlebot gets static HTML snapshots.
+2. **Push to GitHub** — version control + Vercel auto-deploy
+3. **Polish** — Loading states, empty states, error boundaries, accessibility audit
+4. **Phase 2** — Sponsor accounts, in-app chat, monetization, rich text editor

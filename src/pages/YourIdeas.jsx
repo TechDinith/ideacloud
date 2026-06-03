@@ -1,24 +1,40 @@
-import { useEffect, useState, useCallback } from "react";
-import { Navigate } from "react-router-dom";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import SEO from "../components/SEO";
 import IdeaCard from "../components/IdeaCard";
 import IdeaForm from "../components/IdeaForm";
 import { Button } from "../components/ui/button";
 import { fetchUserIdeas, deleteIdea } from "../firebase/ideas";
 
 export default function Dashboard({ user }) {
+  const navigate = useNavigate();
   const [ideas, setIdeas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const cancelledRef = useRef(false);
 
-  if (!user) return <Navigate to="/" replace />;
+  useEffect(() => {
+    if (!user) { navigate("/", { replace: true }); }
+  }, [user, navigate]);
 
   const loadIdeas = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
-    const data = await fetchUserIdeas(user.uid);
-    setIdeas(data);
+    try {
+      const data = await fetchUserIdeas(user.uid);
+      if (cancelledRef.current) return;
+      setIdeas(data);
+    } catch {
+      if (cancelledRef.current) return;
+    }
     setLoading(false);
-  }, [user.uid]);
+  }, [user]);
 
-  useEffect(() => { loadIdeas(); }, [loadIdeas]);
+  useEffect(() => {
+    cancelledRef.current = false;
+    if (!user) return;
+    loadIdeas();
+    return () => { cancelledRef.current = true; };
+  }, [loadIdeas, user]);
 
   async function handleDelete(ideaId) {
     await deleteIdea(ideaId);
@@ -26,11 +42,12 @@ export default function Dashboard({ user }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <main className="min-h-screen bg-gray-950">
+      <SEO title="Your Ideas" description="Manage your posted ideas on IdeaCloud." path="/your-ideas" />
       <div className="relative">
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "var(--theme-overlay)" }} />
-        <div className="absolute top-0 left-1/3 size-72 rounded-full blur-3xl pointer-events-none" style={{ background: "var(--theme-glow-1)" }} />
-        <div className="absolute -bottom-32 right-1/4 size-64 rounded-full blur-3xl pointer-events-none" style={{ background: "var(--theme-glow-2)" }} />
+        <div className="absolute top-0 left-1/3 size-72 max-w-[100vw] rounded-full blur-3xl pointer-events-none" style={{ background: "var(--theme-glow-1)" }} />
+        <div className="absolute -bottom-32 right-1/4 size-64 max-w-[100vw] rounded-full blur-3xl pointer-events-none" style={{ background: "var(--theme-glow-2)" }} />
         <div className="max-w-4xl mx-auto px-5 sm:px-6 py-16 relative">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-[var(--theme-from)] via-[var(--theme-via)] to-[var(--theme-to)] bg-clip-text text-transparent">
             Your Ideas
@@ -56,7 +73,7 @@ export default function Dashboard({ user }) {
           ) : ideas.length === 0 ? (
             <div className="text-center py-16 animate-fade-in-up">
               <div className="size-14 mx-auto mb-3 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(to bottom right, var(--theme-accent-from), var(--theme-accent-to))" }}>
-                <svg className="size-7" style={{ color: "var(--theme-text)" }} fill="none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className="size-7" style={{ color: "var(--theme-text)" }} aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                 </svg>
               </div>
@@ -71,10 +88,12 @@ export default function Dashboard({ user }) {
                     idea={idea}
                     action={
                       <button
+                        type="button"
                         onClick={() => handleDelete(idea.id)}
-                        className="size-7 rounded-full bg-white/10 flex items-center justify-center opacity-0 group-hover/card:opacity-100 hover:bg-red-500/30 transition-all cursor-pointer"
+                        aria-label={`Delete idea: ${idea.title}`}
+                        className="size-7 rounded-full bg-white/10 flex items-center justify-center opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 hover:bg-red-500/30 transition-all cursor-pointer"
                       >
-                        <svg className="size-3.5 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg className="size-3.5 text-white/70" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                         </svg>
                       </button>
@@ -86,6 +105,6 @@ export default function Dashboard({ user }) {
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }
