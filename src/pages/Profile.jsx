@@ -52,7 +52,28 @@ export default function Profile() {
 
   return (
     <main className="min-h-screen bg-gray-950">
-      <SEO title={profile.name} description={profile.bio || `${profile.name}'s ideas on IdeaCloud.`} path={`/profile/${uid}`} />
+      <SEO
+        title={profile.name}
+        description={
+          profile.bio ||
+          `${profile.name} shares ${ideas.length} idea${ideas.length === 1 ? "" : "s"} on IdeaCloud.`
+        }
+        path={`/profile/${uid}`}
+        type="profile"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "ProfilePage",
+          url: `https://ideacloud-itrans.vercel.app/profile/${uid}`,
+          name: profile.name,
+          description: profile.bio || `${profile.name} on IdeaCloud.`,
+          mainEntity: {
+            "@type": "Person",
+            name: profile.name,
+            description: profile.bio || undefined,
+            url: `https://ideacloud-itrans.vercel.app/profile/${uid}`,
+          },
+        }}
+      />
       <div className="relative">
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "var(--theme-overlay)" }} />
         <div className="absolute top-0 left-1/3 size-72 max-w-[100vw] rounded-full blur-3xl pointer-events-none" style={{ background: "var(--theme-glow-1)" }} />

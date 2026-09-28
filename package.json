@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender.mjs",
+    "build:nositemap": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "assets": "python scripts/generate-assets.py",
+    "test:prerender": "vite build && node scripts/_test-prerender.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",

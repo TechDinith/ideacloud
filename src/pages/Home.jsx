@@ -27,7 +27,27 @@ export default function Home({ user, surpriseTrigger }) {
 
   return (
     <main className="min-h-screen bg-gray-950">
-      <SEO title="Home" path="/" />
+      <SEO
+        description="IdeaCloud connects idea generators with sponsors. Browse and share innovative ideas, and reach the people who can fund them."
+        path="/"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "IdeaCloud",
+          url: "https://ideacloud-itrans.vercel.app/",
+          description:
+            "IdeaCloud connects idea generators with sponsors. Browse and share innovative ideas, and reach the people who can fund them.",
+          potentialAction: {
+            "@type": "SearchAction",
+            target: {
+              "@type": "EntryPoint",
+              urlTemplate:
+                "https://ideacloud-itrans.vercel.app/?q={search_term_string}",
+            },
+            "query-input": "required name=search_term_string",
+          },
+        }}
+      />
       <div className="relative">
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "var(--theme-overlay)" }} />
         <div className="absolute top-1/4 left-1/3 -translate-x-1/2 size-80 rounded-full blur-3xl pointer-events-none" style={{ background: "var(--theme-glow-1)" }} />

@@ -45,7 +45,12 @@ export default function Settings({ user }) {
 
   return (
     <main className="min-h-screen bg-gray-950">
-      <SEO title="Settings" description="Edit your IdeaCloud profile settings." path="/settings" />
+      <SEO
+        title="Settings"
+        description="Edit your IdeaCloud profile settings."
+        path="/settings"
+        robots="noindex, nofollow"
+      />
       <div className="relative">
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "var(--theme-overlay)" }} />
         <div className="absolute top-0 left-1/3 size-72 max-w-[100vw] rounded-full blur-3xl pointer-events-none" style={{ background: "var(--theme-glow-1)" }} />

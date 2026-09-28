@@ -223,8 +223,62 @@ cmd /c "npm run build"
 - Created `public/robots.txt` — allows all crawlers, references sitemap
 - Created `public/sitemap.xml` — lists home page URL
 
+## Completed — Google Indexing Fix (Sep 28)
+
+### CRITICAL: Wrong Canonical Domain (was silently deindexing the site)
+- `ideacloud.vercel.app` is a **completely different app** (a `zh-CN` Chinese-language site), NOT this project. This project lives on **`ideacloud-itrans.vercel.app`**.
+- `robots.txt`, `sitemap.xml`, and `SEO.jsx` all pointed at `ideacloud.vercel.app` → the canonical tag told Google the content belonged to a different site, which blocks indexing entirely. All three now use `ideacloud-itrans.vercel.app`.
+- **Any future domain change must update:** `scripts/prerender.mjs` `SITE_ORIGIN`, `src/components/SEO.jsx` `BASE_URL`, `public/robots.txt`, `public/sitemap.xml`.
+
+### Build-Time Prerendering (replaces the `@prerender/prerender` idea)
+- `scripts/prerender.mjs` runs after `vite build` (`npm run build`), reads Firestore via the **REST API** (not the SDK — works in plain Node), and writes real HTML + JSON-LD into `dist/`:
+  - `dist/index.html` — home, latest ideas, category counts, `WebSite`/`Organization`/`ItemList` JSON-LD
+  - `dist/profile/<uid>/index.html` — one per user, `ProfilePage` JSON-LD, `og:type=profile`
+  - `dist/sitemap.xml` — every prerendered URL with `<lastmod>` from the newest idea
+  - `dist/robots.txt` — sitemap line forced to the canonical origin
+- Reads `VITE_FIREBASE_*` from `.env` via its own loader (`loadEnv()`), resolved relative to the repo root, not cwd.
+- **Never fails the build.** Missing env, Firestore unreachable, or an empty collection all degrade to a shell page with a warning.
+- Content is injected into `<div id="prerender-root" hidden aria-hidden="true">` after `#root` — hidden so users never see a flash, but crawlers read it. React still mounts normally into `#root`.
+- HTML is escaped (`esc()`) — user titles containing `< > & "` cannot break out into markup.
+- Generated description for home appends real categories: `"...fund them. Browse ideas in Education and Finance."` Excludes the `Other` bucket.
+
+### Pristine Shell Cache (idempotency)
+- Re-running the prerender must not inherit its own previous output, or titles/JSON-LD/`<title>` tags stack up.
+- Solution: `prerenderShell()` plugin in `vite.config.js` snapshots Vite's finished `index.html` to `node_modules/.cache/prerender-shell.html` on every build. The prerender always renders from that snapshot.
+- Cache lives **outside `dist/`** so it is never deployed, and Vite rewrites it every build so it cannot go stale.
+- Output is normalised to **LF** (`normalizeEol`). Without this, Windows CRLF vs Linux LF made runs non-reproducible.
+- Override for tests: `PRERENDER_DIST` and `PRERENDER_SHELL_CACHE` env vars.
+- `vite.config.js` now uses `fileURLToPath(import.meta.url)` instead of `__dirname` — fixes a pre-existing `no-undef` lint error under ESM.
+
+### Static SEO Fallback in index.html
+- `index.html` now ships a complete `<head>`: title, description, canonical, OG (type/site_name/title/description/url/image/width/height/alt), Twitter card, theme-color.
+- This is the baseline; `SEO.jsx` overrides it client-side per route. Without it, non-JS crawlers saw zero metadata.
+
+### Indexing Hygiene
+- `/your-ideas` and `/settings` now pass `robots="noindex, nofollow"` to `<SEO>` — auth-gated thin pages must not enter the index.
+- Public pages verified to carry **no** `noindex` (regression-tested).
+- JSON-LD: `WebSite` + `SearchAction` on Home, `ProfilePage` on profiles, `ItemList` of `CreativeWork` (name/description/genre/datePublished/author) on Home.
+- `vercel.json` gained long-lived `Cache-Control` for hashed `/assets/`, 1 week for icons/og-image, 1 hour for `robots.txt`/`sitemap.xml`. Kept the COOP header for the Google OAuth popup.
+
+### Images
+- `scripts/generate-assets.py` (Pillow) generates all static images — cloud built as a union of antialiased circles + rounded base, Indigo gradient matching `src/index.css`:
+  - `og-image.png` 1200×630, `apple-touch-icon.png` 180, `favicon-32x32.png`, `icon-192.png`, `icon-512.png`
+- `public/site.webmanifest` links the icons. Run `npm run assets` after changing brand colours.
+- Regenerating images is deterministic — no randomness in the cloud geometry.
+
+### Verification
+- `npm run test:prerender` — **57 assertions** covering metadata, canonical/og correctness, HTML escaping of `< > & "`, per-user idea isolation, pluralisation, sitemap `<lastmod>`, robots dedup, no stale origin anywhere, LF-only output, byte-identical re-runs, and graceful degradation when the collection is empty.
+- Fixtures in `scripts/_fixture-fetch.mjs` stub Firestore via `--import`, so tests never touch the live database. Windows needs `pathToFileURL(...).href` for `--import` paths.
+- `npm run lint` — 16 pre-existing errors (unused `React` imports in shadcn `ui/*`, `react-refresh` in `ui/*` + `ThemeContext`, unused `Button` + `set-state-in-effect` in `YourIdeas.jsx`, one `exhaustive-deps` warning in `IdeaFeed.jsx`). **All pre-date this work; none are in the SEO code.** Left alone deliberately.
+
+### Known Data Issue (not code)
+- The Firestore `ideas` collection is **empty** — 2 users exist, 0 ideas. The home feed renders "No ideas yet". Prerendering works correctly but has no idea content to show until ideas are posted. This is the main reason there is nothing to rank for yet.
+
 ## Next Steps
-1. **Pre-rendering** — Deploy to Vercel, check Google indexing. If content not indexed, add `@prerender/prerender` middleware via `vercel.json` so Googlebot gets static HTML snapshots.
-2. **Push to GitHub** — version control + Vercel auto-deploy
-3. **Polish** — Loading states, empty states, error boundaries, accessibility audit
-4. **Phase 2** — Sponsor accounts, in-app chat, monetization, rich text editor
+1. **Deploy** — `git push` (origin is `github.com/TechDinith/ideacloud`, branch `main`) and let Vercel auto-deploy. Verify `npm run build` passes in the Vercel log, including the `[prerender]` lines.
+2. **Post ideas** — the `ideas` collection is empty; there is nothing for Google to index until real content exists.
+3. **Search Console** — add `https://ideacloud-itrans.vercel.app/` as a URL-prefix property, verify via DNS TXT, submit `sitemap.xml`, then URL Inspection → "Request indexing" for `/` and each `/profile/<uid>`.
+4. **Bing Webmaster Tools** — import the GSC property; it also drives Bing + Copilot.
+5. **Prerender limit** — currently caps at 24 ideas (`MAX_IDEAS`) and 200 users (`MAX_PROFILES`). Raise once the collection is large, or old ideas will silently fall out of the home page and sitemap.
+6. **Reconsider the domain** — a `.vercel.app` subdomain works but a branded domain helps trust and recall. If migrating, update the 4 places listed above and re-submit the sitemap.
+7. **Phase 2** — Sponsor accounts, in-app chat, monetization, rich text editor.

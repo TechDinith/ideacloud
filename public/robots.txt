@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://ideacloud.vercel.app/sitemap.xml
+Sitemap: https://ideacloud-itrans.vercel.app/sitemap.xml
