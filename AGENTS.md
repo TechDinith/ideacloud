@@ -274,10 +274,20 @@ cmd /c "npm run build"
 ### Known Data Issue (not code)
 - The Firestore `ideas` collection is **empty** — 2 users exist, 0 ideas. The home feed renders "No ideas yet". Prerendering works correctly but has no idea content to show until ideas are posted. This is the main reason there is nothing to rank for yet.
 
+### Search Console Verification File
+
+- `public/googledf41cbb3e682b374.html` — Google-issued ownership token, served at the site root
+- **Never rename, edit, reformat, or delete it.** Google re-checks it periodically and revokes Search Console access if it 404s
+- Body must stay exactly `google-site-verification: googledf41cbb3e682b374.html` (53 bytes, no BOM, no CRLF, no trailing newline)
+- Vite copies `public/` → `dist/` root verbatim, so no build config needed
+- Safe under the SPA rewrite in `vercel.json` — Vercel gives the filesystem precedence before rewrites
+- 4 assertions in `_test-prerender.mjs` guard presence, byte-exact body, line endings, and sitemap exclusion
+
 ## Next Steps
 1. **Deploy** — `git push` (origin is `github.com/TechDinith/ideacloud`, branch `main`) and let Vercel auto-deploy. Verify `npm run build` passes in the Vercel log, including the `[prerender]` lines.
-2. **Post ideas** — the `ideas` collection is empty; there is nothing for Google to index until real content exists.
-3. **Search Console** — add `https://ideacloud-itrans.vercel.app/` as a URL-prefix property, verify via DNS TXT, submit `sitemap.xml`, then URL Inspection → "Request indexing" for `/` and each `/profile/<uid>`.
+2. **Verify in Search Console** — confirm `https://ideacloud-itrans.vercel.app/googledf41cbb3e682b374.html` returns the token, then click Verify. This must be a URL-prefix property; HTML file upload does not work for Domain properties.
+3. **Post ideas** — the `ideas` collection is no longer empty (3 ideas as of Sep 28) but is thin; more content means more to rank for.
+4. **Search Console** — submit `sitemap.xml`, then URL Inspection → "Request indexing" for `/` and each `/profile/<uid>`.
 4. **Bing Webmaster Tools** — import the GSC property; it also drives Bing + Copilot.
 5. **Prerender limit** — currently caps at 24 ideas (`MAX_IDEAS`) and 200 users (`MAX_PROFILES`). Raise once the collection is large, or old ideas will silently fall out of the home page and sitemap.
 6. **Reconsider the domain** — a `.vercel.app` subdomain works but a branded domain helps trust and recall. If migrating, update the 4 places listed above and re-submit the sitemap.

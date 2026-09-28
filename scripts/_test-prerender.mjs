@@ -149,6 +149,26 @@ check("shell cache kept outside dist",
   !existsSync(path.join(SANDBOX_DIST, ".prerender-shell.html")) &&
   !readdirSync(SANDBOX_DIST).some((f) => f.includes("shell")));
 
+/* --- Search Console ownership token -------------------------------------
+ * Google re-checks /googledf41cbb3e682b374.html periodically and revokes
+ * Search Console access if it ever 404s. The filename and body must stay
+ * byte-for-byte identical to the file Google issued, so assert both.
+ */
+const VERIFY_FILE = "googledf41cbb3e682b374.html";
+const VERIFY_BODY = "google-site-verification: googledf41cbb3e682b374.html";
+const verifyPath = path.join(SANDBOX_DIST, VERIFY_FILE);
+check("google verification file present in dist root", existsSync(verifyPath));
+check(
+  "google verification file body is byte-exact",
+  existsSync(verifyPath) && readFileSync(verifyPath, "utf8") === VERIFY_BODY
+);
+check(
+  "google verification file has no BOM or CRLF",
+  existsSync(verifyPath) && !readFileSync(verifyPath).includes(Buffer.from([13, 10]))
+);
+check("google verification file is not in the sitemap",
+  !sitemap.includes(VERIFY_FILE) && !sitemap2.includes(VERIFY_FILE));
+
 /* --- empty collection: must degrade gracefully, not crash -------------- */
 rmSync(SANDBOX_DIST, { recursive: true, force: true });
 cpSync(path.join(ROOT, "dist"), SANDBOX_DIST, { recursive: true });
