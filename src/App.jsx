@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import { HelmetProvider } from "react-helmet-async";
 import { ThemeProvider } from "./lib/ThemeContext";
 import Navbar from "./components/Navbar";
+import { Analytics } from "@vercel/analytics/react";
 
 const Home = lazy(() => import("./pages/Home"));
 const YourIdeas = lazy(() => import("./pages/YourIdeas"));
@@ -28,6 +29,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <HelmetProvider>
+      <Analytics />
       {loading ? (
         <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-4">
           <div className="text-3xl font-bold bg-gradient-to-r from-[var(--theme-from)] via-[var(--theme-via)] to-[var(--theme-to)] bg-clip-text text-transparent" style={{ animation: "pulse-logo 1.5s ease-in-out infinite" }}>
